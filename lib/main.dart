@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'second_page.dart';
 import 'alerts_page.dart'; // Importação necessária para o histórico
+import 'login_page.dart';
+import 'recover_email_page.dart';
+import 'recover_code_page.dart';
+import 'register_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +22,14 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF5733)),
         useMaterial3: true,
       ),
-      home: const DashboardPage(),
+      home: const LoginPage(),
+      routes: {
+        LoginPage.routeName: (context) => const LoginPage(),
+        '/dashboard': (context) => const DashboardPage(),
+        RecoverEmailPage.routeName: (context) => const RecoverEmailPage(),
+        RecoverCodePage.routeName: (context) => const RecoverCodePage(),
+        RegisterPage.routeName: (context) => const RegisterPage(),
+      },
     );
   }
 }
@@ -57,7 +68,9 @@ class DashboardPage extends StatelessWidget {
                     // Navegação para o ecrã de Triagem/Câmara
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const SecondPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const SecondPage(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -89,7 +102,9 @@ class DashboardPage extends StatelessWidget {
                     // Navegação para o novo ecrã de Histórico
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const AlertsPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const AlertsPage(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
