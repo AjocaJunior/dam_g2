@@ -1,0 +1,5 @@
+flutter/ephemeral
+windows/
+web/
+build/
+.dart_tool/
