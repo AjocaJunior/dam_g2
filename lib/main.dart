@@ -1,3 +1,4 @@
+import 'mongo_service.dart';
 import 'package:flutter/material.dart';
 import 'second_page.dart';
 import 'alerts_page.dart'; // Importação necessária para o histórico
@@ -6,7 +7,9 @@ import 'recover_email_page.dart';
 import 'recover_code_page.dart';
 import 'register_page.dart';
 
-void main() {
+void main() async { // <--- Adicionar o 'async' aqui
+  WidgetsFlutterBinding.ensureInitialized();
+  await MongoService.connect();
   runApp(const MyApp());
 }
 
