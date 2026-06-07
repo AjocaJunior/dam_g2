@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'mongo_service.dart';
+import 'recover_email_page.dart'; // Importação necessária para a rota estática
+import 'register_page.dart';      // Importação necessária para a rota estática
 
 class LoginPage extends StatefulWidget {
   static const routeName = '/login';
-
   const LoginPage({super.key});
 
   @override
@@ -10,14 +12,37 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _executarLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() { _isLoading = true; });
+
+    bool sucesso = await MongoService.verificarLogin(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    setState(() { _isLoading = false; });
+
+    if (sucesso) {
+      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erro ao efetuar login.'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -27,113 +52,103 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 24),
-              const Center(child: _DogFootHeader(title: 'Login')),
-              const SizedBox(height: 32),
-              const Text(
-                'Email',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              _buildTextField(
-                controller: _emailController,
-                hintText: 'Digite seu email',
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Senha',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              _buildTextField(
-                controller: _passwordController,
-                hintText: 'Digite sua senha',
-                obscureText: true,
-              ),
-              const SizedBox(height: 28),
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/dashboard',
-                      (route) => false,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E2E2E),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 24),
+                const Center(child: _DogFootHeader(title: 'Login')),
+                const SizedBox(height: 32),
+                const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    hintText: 'Digite seu email',
+                    filled: true,
+                    fillColor: Color(0xFFE0E0E0),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8)), borderSide: BorderSide.none),
+                  ),
+                  validator: (value) => (value == null || !value.contains('@')) ? 'Insira um email válido' : null,
+                ),
+                const SizedBox(height: 16),
+                const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    hintText: 'Digite sua senha',
+                    filled: true,
+                    fillColor: Color(0xFFE0E0E0),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8)), borderSide: BorderSide.none),
+                  ),
+                  validator: (value) => (value == null || value.length < 4) ? 'A senha deve ter 4+ caracteres' : null,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _executarLogin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E2E2E),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                  ),
-                  child: const Text(
-                    'Login',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 48,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/recover-email');
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black,
-                    side: const BorderSide(color: Colors.grey),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Esqueci a Senha, Recuperar'),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/register');
-                  },
-                  child: const Text(
-                    'Ainda não tem conta? Registrar',
-                    style: TextStyle(color: Colors.black87),
+                    child: _isLoading 
+                      ? const CircularProgressIndicator(color: Colors.white) 
+                      : const Text('Login', style: TextStyle(color: Colors.white)),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hintText,
-    bool obscureText = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        hintText: hintText,
-        filled: true,
-        fillColor: const Color(0xFFE0E0E0),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
+                // =========================================================================
+                //  OPÇÕES ADICIONADAS: RECUPERAR SENHA E REGISTAR CONTA
+                // =========================================================================
+                const SizedBox(height: 24),
+                
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, RecoverEmailPage.routeName);
+                  },
+                  child: const Text(
+                    'Esqueci a senha, recuperar',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, RegisterPage.routeName);
+                  },
+                  child: Center(
+                    child: RichText(
+                      text: const TextSpan(
+                        style: TextStyle(color: Colors.black54, fontSize: 14),
+                        children: [
+                          TextSpan(text: 'Ainda não tem conta? '),
+                          TextSpan(
+                            text: 'Registar',
+                            style: TextStyle(
+                              color: Color(0xFFFF5733), // Cor padrão do teu tema
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -142,37 +157,14 @@ class _LoginPageState extends State<LoginPage> {
 
 class _DogFootHeader extends StatelessWidget {
   final String title;
-
   const _DogFootHeader({required this.title});
-
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFFF5F5F5),
-            border: Border.all(color: Colors.black12, width: 2),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Image.asset(
-              'assets/dog_foot.png',
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.pets, size: 48, color: Colors.brown);
-              },
-            ),
-          ),
-        ),
+        const Icon(Icons.pets, size: 64, color: Color(0xFF2E2E2E)),
         const SizedBox(height: 16),
-        Text(
-          title,
-          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-        ),
+        Text(title, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
       ],
     );
   }
