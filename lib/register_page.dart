@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'mongo_service.dart'; // Importa o serviço criado
 
 class RegisterPage extends StatefulWidget {
   static const routeName = '/register';
@@ -14,8 +15,9 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  
+  bool _isLoading = false; // Estado de carregamento para a operação
 
   @override
   void dispose() {
@@ -25,6 +27,63 @@ class _RegisterPageState extends State<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  // Função que executa a validação e o envio dos dados
+  void _executarRegisto() async {
+    final nome = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final telefone = _phoneController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    // Validações básicas de formulário
+    if (nome.isEmpty || email.isEmpty || telefone.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, preencha todos os campos.')),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('As senhas introduzidas não coincidem.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Chama o serviço assíncrono do MongoDB
+    bool sucesso = await MongoService.registarUtilizador(
+      nome: nome,
+      email: email,
+      telefone: telefone,
+      password: password,
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (sucesso) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.green, content: Text('Registo efetuado com sucesso!')),
+      );
+      
+      // Redireciona para o dashboard após sucesso limpando a pilha de navegação
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/dashboard',
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.red, content: Text('Falha no registo. Tente novamente.')),
+      );
+    }
   }
 
   @override
@@ -43,80 +102,42 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Nome completo',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              const Text('Nome completo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
-              _buildTextField(
-                controller: _nameController,
-                hintText: 'Digite seu nome completo',
-              ),
+              _buildTextField(controller: _nameController, hintText: 'Digite seu nome completo'),
               const SizedBox(height: 16),
-              const Text(
-                'Email',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              
+              const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
-              _buildTextField(
-                controller: _emailController,
-                hintText: 'Digite seu email',
-                keyboardType: TextInputType.emailAddress,
-              ),
+              _buildTextField(controller: _emailController, hintText: 'Digite seu email', keyboardType: TextInputType.emailAddress),
               const SizedBox(height: 16),
-              const Text(
-                'Telefone',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              
+              const Text('Telefone', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
-              _buildTextField(
-                controller: _phoneController,
-                hintText: 'Digite seu telefone',
-                keyboardType: TextInputType.phone,
-              ),
+              _buildTextField(controller: _phoneController, hintText: 'Digite seu telefone', keyboardType: TextInputType.phone),
               const SizedBox(height: 16),
-              const Text(
-                'Senha',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              
+              const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
-              _buildTextField(
-                controller: _passwordController,
-                hintText: 'Digite sua senha',
-                obscureText: true,
-              ),
+              _buildTextField(controller: _passwordController, hintText: 'Digite sua senha', obscureText: true),
               const SizedBox(height: 16),
-              const Text(
-                'Confirmar Senha',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              
+              const Text('Confirmar Senha', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
-              _buildTextField(
-                controller: _confirmPasswordController,
-                hintText: 'Confirme sua senha',
-                obscureText: true,
-              ),
+              _buildTextField(controller: _confirmPasswordController, hintText: 'Confirme sua senha', obscureText: true),
               const SizedBox(height: 28),
+              
               SizedBox(
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/dashboard',
-                      (route) => false,
-                    );
-                  },
+                  onPressed: _isLoading ? null : _executarRegisto, // Bloqueia se estiver a processar
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E2E2E),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text(
-                    'Registrar',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: _isLoading 
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Registrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
               const SizedBox(height: 14),
@@ -124,18 +145,12 @@ class _RegisterPageState extends State<RegisterPage> {
                 height: 48,
                 child: OutlinedButton(
                   onPressed: () {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/login',
-                      (route) => false,
-                    );
+                    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.black,
                     side: const BorderSide(color: Colors.grey),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Text('Já tenho conta, Login'),
                 ),
@@ -161,10 +176,7 @@ class _RegisterPageState extends State<RegisterPage> {
         hintText: hintText,
         filled: true,
         fillColor: const Color(0xFFE0E0E0),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
