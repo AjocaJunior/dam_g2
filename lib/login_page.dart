@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'mongo_service.dart';
 import 'recover_email_page.dart'; // Importação necessária para a rota estática
-import 'register_page.dart';      // Importação necessária para a rota estática
+import 'register_page.dart'; // Importação necessária para a rota estática
 
 class LoginPage extends StatefulWidget {
   static const routeName = '/login';
@@ -27,20 +27,33 @@ class _LoginPageState extends State<LoginPage> {
   void _executarLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() { _isLoading = true; });
+    setState(() {
+      _isLoading = true;
+    });
 
     bool sucesso = await MongoService.verificarLogin(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
-    setState(() { _isLoading = false; });
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
 
     if (sucesso) {
-      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/dashboard',
+        (route) => false,
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro ao efetuar login.'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Erro ao efetuar login.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -60,7 +73,10 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 24),
                 const Center(child: _DogFootHeader(title: 'Login')),
                 const SizedBox(height: 32),
-                const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'Email',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailController,
@@ -69,12 +85,20 @@ class _LoginPageState extends State<LoginPage> {
                     hintText: 'Digite seu email',
                     filled: true,
                     fillColor: Color(0xFFE0E0E0),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8)), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
-                  validator: (value) => (value == null || !value.contains('@')) ? 'Insira um email válido' : null,
+                  validator: (value) => (value == null || !value.contains('@'))
+                      ? 'Insira um email válido'
+                      : null,
                 ),
                 const SizedBox(height: 16),
-                const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'Senha',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _passwordController,
@@ -83,9 +107,14 @@ class _LoginPageState extends State<LoginPage> {
                     hintText: 'Digite sua senha',
                     filled: true,
                     fillColor: Color(0xFFE0E0E0),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8)), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
-                  validator: (value) => (value == null || value.length < 4) ? 'A senha deve ter 4+ caracteres' : null,
+                  validator: (value) => (value == null || value.length < 4)
+                      ? 'A senha deve ter 4+ caracteres'
+                      : null,
                 ),
                 const SizedBox(height: 28),
                 SizedBox(
@@ -94,11 +123,16 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: _isLoading ? null : _executarLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2E2E2E),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    child: _isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white) 
-                      : const Text('Login', style: TextStyle(color: Colors.white)),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Login',
+                            style: TextStyle(color: Colors.white),
+                          ),
                   ),
                 ),
 
@@ -106,7 +140,7 @@ class _LoginPageState extends State<LoginPage> {
                 //  OPÇÕES ADICIONADAS: RECUPERAR SENHA E REGISTAR CONTA
                 // =========================================================================
                 const SizedBox(height: 24),
-                
+
                 TextButton(
                   onPressed: () {
                     Navigator.pushNamed(context, RecoverEmailPage.routeName);
@@ -136,7 +170,9 @@ class _LoginPageState extends State<LoginPage> {
                           TextSpan(
                             text: 'Registar',
                             style: TextStyle(
-                              color: Color(0xFFFF5733), // Cor padrão do teu tema
+                              color: Color(
+                                0xFFFF5733,
+                              ), // Cor padrão do teu tema
                               fontWeight: FontWeight.bold,
                               decoration: TextDecoration.underline,
                             ),
@@ -164,7 +200,10 @@ class _DogFootHeader extends StatelessWidget {
       children: [
         const Icon(Icons.pets, size: 64, color: Color(0xFF2E2E2E)),
         const SizedBox(height: 16),
-        Text(title, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }

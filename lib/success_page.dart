@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'mongo_service.dart'; // Importa para ler os dados da sessão no cabeçalho
+import 'mongo_service.dart'; 
 
 class SuccessPage extends StatelessWidget {
   const SuccessPage({super.key});
@@ -18,9 +18,6 @@ class SuccessPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // =========================================================================
-            //  O TEU CABEÇALHO ADICIONADO (BARRA CINZENTA DE PERFIL COM AVATAR E LOGOUT)
-            // =========================================================================
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: const BoxDecoration(
@@ -68,10 +65,6 @@ class SuccessPage extends StatelessWidget {
                 ],
               ),
             ),
-
-            // =========================================================================
-            //  TODO O TEU CONTEÚDO ORIGINAL EXATAMENTE IGUAL (SEM ALTERAR NADA DE NADA)
-            // =========================================================================
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
