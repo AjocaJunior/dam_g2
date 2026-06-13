@@ -118,6 +118,28 @@ class MongoService {
     return _parseAlertasResponse(response);
   }
 
+  static Future<Map<String, dynamic>?> atualizarStatusAlerta({
+    required String alertaId,
+    required String statusAlerta,
+  }) async {
+    final utilizador = utilizadorLogado;
+    if (utilizador == null) return null;
+
+    final response = await _patch('/alerts/$alertaId/status', {
+      'utilizadorId': utilizador['_id'],
+      'statusAlerta': statusAlerta,
+    });
+
+    if (response == null || response['ok'] != true) {
+      ultimoErro = response?['message']?.toString();
+      return null;
+    }
+
+    ultimoErro = null;
+    final alerta = response['alerta'];
+    return alerta is Map ? Map<String, dynamic>.from(alerta) : null;
+  }
+
   static List<Map<String, dynamic>> _parseAlertasResponse(
     Map<String, dynamic>? response,
   ) {
@@ -172,6 +194,24 @@ class MongoService {
     } catch (e) {
       ultimoErro = e.toString();
       debugPrint('Erro HTTP POST $path: $e');
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _patch(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$apiUrl$path'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+      return _decodeResponse(response);
+    } catch (e) {
+      ultimoErro = e.toString();
+      debugPrint('Erro HTTP PATCH $path: $e');
       return null;
     }
   }

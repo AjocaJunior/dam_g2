@@ -16,6 +16,13 @@ class AlertsPage extends StatefulWidget {
 class _AlertsPageState extends State<AlertsPage> {
   late Future<List<Map<String, dynamic>>> _alertasFuture;
   bool _somenteMeusAlertas = true;
+  static const Map<String, String> _statusAlertaLabels = {
+    'CRIADO': 'Criado',
+    'ENVIADO': 'Enviado',
+    'EM_ANALISE': 'Em analise',
+    'RESOLVIDO': 'Resolvido',
+    'CANCELADO': 'Cancelado',
+  };
 
   @override
   void initState() {
@@ -280,51 +287,153 @@ class _AlertsPageState extends State<AlertsPage> {
     showDialog<void>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(animal?['nome']?.toString() ?? 'Detalhes do alerta'),
-          content: SizedBox(
-            width: dialogWidth,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (fotoBytes != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SizedBox(
-                        width: dialogWidth,
-                        height: 220,
-                        child: Image.memory(fotoBytes, fit: BoxFit.cover),
+        var statusSelecionado = _statusAlertaLabels.containsKey(status)
+            ? status
+            : 'ENVIADO';
+        var isSaving = false;
+
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: Text(animal?['nome']?.toString() ?? 'Detalhes do alerta'),
+              content: SizedBox(
+                width: dialogWidth,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (fotoBytes != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: dialogWidth,
+                            height: 220,
+                            child: Image.memory(fotoBytes, fit: BoxFit.cover),
+                          ),
+                        ),
+                      if (fotoBytes != null) const SizedBox(height: 14),
+                      _detailRow('Estado do animal', estado),
+                      _detailRow('Data', data),
+                      _detailRow('Especie', animal?['especie']?.toString()),
+                      _detailRow('Raca', animal?['raca']?.toString()),
+                      _detailRow('Cor', animal?['cor']?.toString()),
+                      _detailRow('Localizacao', localizacao),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: statusSelecionado,
+                        decoration: const InputDecoration(
+                          labelText: 'Estado do alerta',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _statusAlertaLabels.entries
+                            .map(
+                              (entry) => DropdownMenuItem(
+                                value: entry.key,
+                                child: Text(entry.value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: isSaving
+                            ? null
+                            : (value) {
+                                if (value == null) return;
+                                setDialogState(() {
+                                  statusSelecionado = value;
+                                });
+                              },
                       ),
-                    ),
-                  if (fotoBytes != null) const SizedBox(height: 14),
-                  _detailRow('Estado', estado),
-                  _detailRow('Status', status),
-                  _detailRow('Data', data),
-                  _detailRow('Especie', animal?['especie']?.toString()),
-                  _detailRow('Raca', animal?['raca']?.toString()),
-                  _detailRow('Cor', animal?['cor']?.toString()),
-                  _detailRow('Localizacao', localizacao),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Descricao',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Descricao',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(descricao),
+                    ],
                   ),
-                  Text(descricao),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Fechar'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.pop(context),
+                  child: const Text('Fechar'),
+                ),
+                FilledButton.icon(
+                  onPressed: isSaving || statusSelecionado == status
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isSaving = true;
+                          });
+
+                          final ok = await _atualizarStatusAlerta(
+                            alerta,
+                            statusSelecionado,
+                          );
+
+                          if (!dialogContext.mounted) return;
+
+                          setDialogState(() {
+                            isSaving = false;
+                          });
+
+                          if (ok) Navigator.pop(dialogContext);
+                        },
+                  icon: isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
+                  label: const Text('Guardar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
+  }
+
+  Future<bool> _atualizarStatusAlerta(
+    Map<String, dynamic> alerta,
+    String novoStatus,
+  ) async {
+    final alertaId = alerta['_id']?.toString();
+    if (alertaId == null || alertaId.isEmpty) return false;
+
+    final atualizado = await MongoService.atualizarStatusAlerta(
+      alertaId: alertaId,
+      statusAlerta: novoStatus,
+    );
+
+    if (!mounted) return false;
+
+    if (atualizado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            MongoService.ultimoErro ??
+                'Nao foi possivel atualizar o estado do alerta.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Estado do alerta atualizado para '
+          '${_statusAlertaLabels[novoStatus]}.',
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+    _recarregarAlertas();
+    return true;
   }
 
   Widget _detailRow(String label, String? value) {

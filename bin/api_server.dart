@@ -83,6 +83,14 @@ Future<void> _handleRequest(HttpRequest request) async {
       return;
     }
 
+    if (request.method == 'PATCH' &&
+        request.uri.pathSegments.length == 3 &&
+        request.uri.pathSegments[0] == 'alerts' &&
+        request.uri.pathSegments[2] == 'status') {
+      await _updateAlertStatus(request, request.uri.pathSegments[1]);
+      return;
+    }
+
     if (request.method == 'GET' && path == '/debug/counts') {
       await _debugCounts(request);
       return;
@@ -323,6 +331,80 @@ Future<void> _listAlerts(HttpRequest request) async {
   });
 }
 
+Future<void> _updateAlertStatus(HttpRequest request, String alertaIdRaw) async {
+  final alertaId = _parseObjectId(alertaIdRaw);
+  final body = await _readJson(request);
+  final utilizadorId = _parseObjectId(body['utilizadorId']);
+  final novoStatus = _normalizarStatusAlerta(body['statusAlerta']?.toString());
+
+  if (alertaId == null || utilizadorId == null) {
+    request.response.statusCode = HttpStatus.badRequest;
+    await _sendJson(request.response, {
+      'ok': false,
+      'message': 'Alerta ou utilizador invalido.',
+    });
+    return;
+  }
+
+  if (novoStatus == null) {
+    request.response.statusCode = HttpStatus.badRequest;
+    await _sendJson(request.response, {
+      'ok': false,
+      'message': 'Estado do alerta invalido.',
+    });
+    return;
+  }
+
+  final alerta = await _alertas.findOne(where.id(alertaId));
+  if (alerta == null) {
+    request.response.statusCode = HttpStatus.notFound;
+    await _sendJson(request.response, {
+      'ok': false,
+      'message': 'Alerta nao encontrado.',
+    });
+    return;
+  }
+
+  if (alerta['utilizadorId'] != utilizadorId) {
+    request.response.statusCode = HttpStatus.forbidden;
+    await _sendJson(request.response, {
+      'ok': false,
+      'message': 'Nao pode atualizar alertas de outro utilizador.',
+    });
+    return;
+  }
+
+  final agora = DateTime.now().toUtc();
+  final result = await _alertas.updateOne(
+    where.id(alertaId),
+    modify.set('statusAlerta', novoStatus).set('updatedAt', agora),
+  );
+  _ensureWriteSuccess(result, 'atualizar estado do alerta');
+
+  await _notificacoes.insertOne({
+    '_id': ObjectId(),
+    'alertaId': alertaId,
+    'utilizadorId': utilizadorId,
+    'mensagem': 'Estado do alerta atualizado para $novoStatus.',
+    'tipo': 'ATUALIZACAO_ALERTA',
+    'dataEnvio': agora,
+    'lida': false,
+  });
+
+  final alertaAtualizado = await _alertas.findOne(where.id(alertaId));
+  final animalId = alertaAtualizado?['animalId'];
+  if (alertaAtualizado != null && animalId != null) {
+    alertaAtualizado['animal'] = await _animais.findOne(where.id(animalId));
+  }
+
+  stdout.writeln('Estado do alerta atualizado: ${alertaId.oid} -> $novoStatus');
+
+  await _sendJson(request.response, {
+    'ok': true,
+    'alerta': _toJsonValue(alertaAtualizado),
+  });
+}
+
 Future<void> _debugCounts(HttpRequest request) async {
   await _sendJson(request.response, {
     'ok': true,
@@ -352,7 +434,10 @@ Future<void> _sendJson(HttpResponse response, Map<String, dynamic> body) async {
 
 void _addCorsHeaders(HttpResponse response) {
   response.headers.set('Access-Control-Allow-Origin', '*');
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.headers.set(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PATCH, OPTIONS',
+  );
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
 }
 
@@ -381,6 +466,23 @@ String _normalizarEstado(String? estado) {
     default:
       if (estado == 'FERIDO' || estado == 'PERDIDO') return estado!;
       return 'OUTRO';
+  }
+}
+
+String? _normalizarStatusAlerta(String? status) {
+  switch (status?.toLowerCase().replaceAll(' ', '_')) {
+    case 'criado':
+      return 'CRIADO';
+    case 'enviado':
+      return 'ENVIADO';
+    case 'em_analise':
+      return 'EM_ANALISE';
+    case 'resolvido':
+      return 'RESOLVIDO';
+    case 'cancelado':
+      return 'CANCELADO';
+    default:
+      return null;
   }
 }
 
