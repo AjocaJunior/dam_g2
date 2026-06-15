@@ -16,11 +16,23 @@ Noutro terminal Flutter:
 flutter run -d chrome
 ```
 
+Para testar num telemovel Android na mesma rede, gerar o APK indicando o IP
+local da maquina onde a API esta a correr:
+
+```powershell
+flutter build apk --debug --dart-define=API_URL=http://10.42.0.112:8080
+```
+
 Quando a API estiver ativa, o console do Flutter deve mostrar:
 
 ```text
 API MongoDB ligada em http://127.0.0.1:8080.
 ```
 
+```API disponivel em
+https://dam-g2.onrender.com
+```
+
 As colecoes usadas sao `utilizadores`, `animais`, `alertas_sos` e
 `notificacoes`.
+

@@ -16,7 +16,10 @@ late final String _activeDatabaseName;
 
 Future<void> main() async {
   final mongoUrl = Platform.environment['MONGO_URL'] ?? _defaultMongoUrl;
-  final port = int.tryParse(Platform.environment['API_PORT'] ?? '') ?? 8080;
+   final port = int.tryParse(
+      Platform.environment['PORT'] ?? Platform.environment['API_PORT'] ?? '',
+    ) ??
+    8080;
   _activeDatabaseName = _databaseName(mongoUrl);
 
   if (mongoUrl.contains('<db_username>') ||
@@ -38,8 +41,9 @@ Future<void> main() async {
   _alertas = _db.collection('alertas_sos');
   _notificacoes = _db.collection('notificacoes');
 
-  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
-  stdout.writeln('API SOS Animal ligada em http://127.0.0.1:$port');
+  final server = await HttpServer.bind(InternetAddress.anyIPv4, port);
+  stdout.writeln('API SOS Animal ligada em http://0.0.0.0:$port');
+  stdout.writeln('Na app Android, use o IP da maquina na rede local.');
   stdout.writeln('MongoDB ligado com sucesso em $_activeDatabaseName.');
 
   await for (final request in server) {

@@ -1,0 +1,16 @@
+.git
+.dart_tool
+.idea
+build
+android/.gradle
+android/app/build
+ios
+linux
+macos
+web
+windows
+_samplepics
+*.log
+*.iml
+*.code-workspace
+package-lock.json

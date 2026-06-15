@@ -14,7 +14,9 @@ class MongoService {
 
   static Future<void> connect() async {
     try {
-      final response = await http.get(Uri.parse('$apiUrl/health'));
+      final response = await http
+          .get(Uri.parse('$apiUrl/health'))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         debugPrint('API MongoDB ligada em $apiUrl.');
       } else {
@@ -171,7 +173,9 @@ class MongoService {
 
   static Future<Map<String, dynamic>?> _get(String path) async {
     try {
-      final response = await http.get(Uri.parse('$apiUrl$path'));
+      final response = await http
+          .get(Uri.parse('$apiUrl$path'))
+          .timeout(const Duration(seconds: 20));
       return _decodeResponse(response);
     } catch (e) {
       ultimoErro = e.toString();
@@ -189,7 +193,7 @@ class MongoService {
         Uri.parse('$apiUrl$path'),
         headers: const {'Content-Type': 'application/json'},
         body: jsonEncode(body),
-      );
+      ).timeout(const Duration(seconds: 20));
       return _decodeResponse(response);
     } catch (e) {
       ultimoErro = e.toString();
@@ -207,7 +211,7 @@ class MongoService {
         Uri.parse('$apiUrl$path'),
         headers: const {'Content-Type': 'application/json'},
         body: jsonEncode(body),
-      );
+      ).timeout(const Duration(seconds: 20));
       return _decodeResponse(response);
     } catch (e) {
       ultimoErro = e.toString();

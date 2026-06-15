@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'mongo_service.dart';
 import 'package:flutter/material.dart';
 import 'second_page.dart';
@@ -7,9 +9,9 @@ import 'recover_email_page.dart';
 import 'recover_code_page.dart';
 import 'register_page.dart';
 
-void main() async { 
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await MongoService.connect();
+  unawaited(MongoService.connect());
   runApp(const MyApp());
 }
 
