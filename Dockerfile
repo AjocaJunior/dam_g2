@@ -6,7 +6,7 @@ COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
 COPY . .
-RUN dart compile exe bin/api_server.dart -o build/api_server
+RUN mkdir -p build && dart compile exe bin/api_server.dart -o build/api_server
 
 FROM debian:bookworm-slim
 
